@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DepositWise — End-to-end banking ML analytics dashboard for term-deposit subscription propensity modeling, customer segmentation, and predictive outreach optimization.">
+  <title>{% block title %}DepositWise{% endblock %} — Banking ML Analytics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <!-- TOP HEADER -->
+  <header class="app-header">
+    <div class="brand-container">
+      <a href="/" class="brand-title">DepositWise</a>
+      <span class="brand-subtitle">Bank Term-Deposit Subscription Analytics &amp; Machine Learning Dashboard</span>
+    </div>
+  </header>
+
+  <!-- SIDEBAR NAVIGATION -->
+  <aside class="app-sidebar">
+    <a class="nav-link {{ 'active' if active == 'home' }}" href="/">
+      <span class="nav-icon">🏠</span> Home
+    </a>
+    <a class="nav-link {{ 'active' if active == 'data-loading' }}" href="/data-loading">
+      <span class="nav-icon">📁</span> Data Loading
+    </a>
+    <a class="nav-link {{ 'active' if active == 'eda' }}" href="/eda">
+      <span class="nav-icon">📊</span> EDA
+    </a>
+    <a class="nav-link {{ 'active' if active == 'preprocessing' }}" href="/preprocessing">
+      <span class="nav-icon">⚙️</span> Preprocessing
+    </a>
+    <a class="nav-link {{ 'active' if active == 'linear-regression' }}" href="/linear-regression">
+      <span class="nav-icon">📈</span> Linear Regression
+    </a>
+    <a class="nav-link {{ 'active' if active == 'logistic-regression' }}" href="/logistic-regression">
+      <span class="nav-icon">🔢</span> Logistic Regression
+    </a>
+    <a class="nav-link {{ 'active' if active == 'tree-based-algorithms' }}" href="/tree-based-algorithms">
+      <span class="nav-icon">🌳</span> Decision Trees &amp; Ensembles
+    </a>
+
+    <!-- COLLAPSIBLE UNSUPERVISED LEARNING SECTION -->
+    <div class="nav-group">
+      <button type="button" class="nav-group-header {{ 'active-parent' if active in ['k-means', 'hierarchical', 'dbscan', 'pca'] }}" id="unsupervisedToggle">
+        <span style="display:flex;align-items:center;gap:10px;">
+          <span class="nav-icon">🔮</span> Unsupervised Learning
+        </span>
+        <span class="nav-caret {{ 'open' if active in ['k-means', 'hierarchical', 'dbscan', 'pca'] }}" id="unsupervisedCaret">▼</span>
+      </button>
+      <div class="nav-sublinks" id="unsupervisedSublinks" style="display: {{ 'flex' if active in ['k-means', 'hierarchical', 'dbscan', 'pca'] else 'none' }};">
+        <div class="nav-subcat-header">Clustering</div>
+        <a class="nav-sublink {{ 'active' if active == 'k-means' }}" href="/k-means">
+          K-Means
+        </a>
+        <a class="nav-sublink {{ 'active' if active == 'hierarchical' }}" href="/hierarchical">
+          Hierarchical Clustering
+        </a>
+        <a class="nav-sublink {{ 'active' if active == 'dbscan' }}" href="/dbscan-clustering">
+          DBSCAN
+        </a>
+        <div class="nav-subcat-header" style="margin-top: 6px;">Dimensionality Reduction</div>
+        <a class="nav-sublink {{ 'active' if active == 'pca' }}" href="/pca">
+          PCA
+        </a>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN PAGE CONTENT -->
+  <main class="app-main">
+    {% block content %}{% endblock %}
+    {% block learned %}
+    <section class="card what-we-learned">
+      <div class="card-title">💡 What We Learned</div>
+      <p>This page presents one clear banking analytics concept, its method, and the result produced from the Bank Marketing training data.</p>
+    </section>
+    {% endblock %}
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <span>DepositWise — Bank Term-Deposit Analytics</span>
+      <span>Built with Flask · scikit-learn · XGBoost · LightGBM</span>
+    </footer>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggle = document.getElementById("unsupervisedToggle");
+      const sublinks = document.getElementById("unsupervisedSublinks");
+      const caret = document.getElementById("unsupervisedCaret");
+
+      if (toggle && sublinks && caret) {
+        toggle.addEventListener("click", function () {
+          const isOpen = sublinks.style.display === "flex";
+          sublinks.style.display = isOpen ? "none" : "flex";
+          if (isOpen) {
+            caret.classList.remove("open");
+          } else {
+            caret.classList.add("open");
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

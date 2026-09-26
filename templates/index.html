@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}Home — Project Overview{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">DepositWise Banking Analytics</h1>
+  <p class="page-desc">A rigorous, end-to-end workflow for analyzing Bank Marketing data and predicting term-deposit subscription before customer contact.</p>
+</div>
+
+<!-- TOP METRIC CARDS -->
+<div class="metric-row">
+  <div class="metric-card accent-blue">
+    <div class="metric-label">Dataset Source</div>
+    <div class="metric-value" style="font-size:20px;">Bank Marketing</div>
+    <div class="metric-sub">Portuguese Banking Campaign</div>
+  </div>
+  <div class="metric-card accent-teal">
+    <div class="metric-label">Total Records</div>
+    <div class="metric-value">{{ '{:,}'.format(summary.total_records) }}</div>
+    <div class="metric-sub">Training records used by this dashboard</div>
+  </div>
+  <div class="metric-card accent-emerald">
+    <div class="metric-label">Features / Schema</div>
+    <div class="metric-value" style="font-size:20px;">16 Features + 1 Target</div>
+    <div class="metric-sub">17 Dataset Columns</div>
+  </div>
+  <div class="metric-card accent-purple">
+    <div class="metric-label">Target Variable</div>
+    <div class="metric-value">y (Binary)</div>
+    <div class="metric-sub">Term Deposit (yes / no)</div>
+  </div>
+  <div class="metric-card accent-amber">
+    <div class="metric-label">Class Balance</div>
+    <div class="metric-value">11.7%</div>
+    <div class="metric-sub">Positive Subscription Rate</div>
+  </div>
+  <div class="metric-card accent-cyan">
+    <div class="metric-label">Leakage Guard</div>
+    <div class="metric-value" style="font-size:20px;">Duration Dropped</div>
+    <div class="metric-sub">Strict Pre-Call Feature Policy</div>
+  </div>
+</div>
+
+<!-- EXECUTIVE PROBLEM STATEMENT & BUSINESS CONTEXT -->
+<div class="card">
+  <div class="card-title">Project Objective</div>
+  <p style="margin-bottom:12px; color:#334155; line-height:1.6;">
+    Term deposits represent a critical liability portfolio and stable liquidity source for retail banking institutions. 
+    However, conventional cold-calling campaigns incur substantial operational costs, call-center fatigue, and low conversion rates (~11.7%).
+    <strong>DepositWise</strong> develops an end-to-end data science and machine learning solution to accurately predict customer term-deposit subscription propensity before making contact, enabling data-driven priority outreach.
+  </p>
+  <div class="info-callout blue">
+    <strong>Data Leakage Prevention:</strong> The feature <code>duration</code> (call duration in seconds) is recorded during or after contact. Including it would inflate results while making the model unsuitable for pre-contact decisions, so it is excluded from all classification models.
+  </div>
+</div>
+
+<!-- INTERACTIVE PIPELINE ARCHITECTURE -->
+<div class="card">
+  <div class="card-title">End-to-End Machine Learning Pipeline</div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Module</th>
+          <th>Core Operations &amp; Methodologies</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-info">Stage 1</span></td>
+          <td><strong>Data Loading</strong></td>
+          <td>Data ingestion, schema profiling, missing &amp; duplicate row validation, in-memory footprint analysis.</td>
+          <td><a href="/data-loading" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-info">Stage 2</span></td>
+          <td><strong>Exploratory Data Analysis</strong></td>
+          <td>Descriptive statistics, class distribution, correlation matrix, IQR outlier analysis, bivariate customer demographics.</td>
+          <td><a href="/eda" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-info">Stage 3</span></td>
+          <td><strong>Data Preprocessing</strong></td>
+          <td>One-Hot Encoding, StandardScaler vs MinMaxScaler, stratified 80/20 train-test split, leakage prevention.</td>
+          <td><a href="/preprocessing" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-warning">Stage 4</span></td>
+          <td><strong>Linear Regression</strong></td>
+          <td>Secondary regression experiment modeling continuous customer <code>balance</code> (OLS vs Ridge Regularization).</td>
+          <td><a href="/linear-regression" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-success">Stage 5</span></td>
+          <td><strong>Logistic Regression</strong></td>
+          <td>Standard OLS Logistic Regression vs L2 Regularized Logistic Regression, ROC/PR curves, confusion matrices, odds ratios.</td>
+          <td><a href="/logistic-regression" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-success">Stage 6</span></td>
+          <td><strong>Decision Trees &amp; Ensembles</strong></td>
+          <td>Decision Tree, Random Forest, Extra Trees, Gradient Boosting, AdaBoost, XGBoost, and LightGBM with real feature importances.</td>
+          <td><a href="/tree-based-algorithms" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple" style="background:#f3e8ff; color:#7e22ce;">Stage 7</span></td>
+          <td><strong>K-Means Clustering</strong></td>
+          <td>Centroid-based customer grouping with manual K, elbow, and silhouette selection on 6 numerical customer features.</td>
+          <td><a href="/k-means" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple" style="background:#f3e8ff; color:#7e22ce;">Stage 8</span></td>
+          <td><strong>Hierarchical Clustering</strong></td>
+          <td>Agglomerative grouping with linkage choices, dendrograms, and transparent cluster cuts without target bias.</td>
+          <td><a href="/hierarchical" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple" style="background:#f3e8ff; color:#7e22ce;">Stage 9</span></td>
+          <td><strong>DBSCAN</strong></td>
+          <td>Density-based clustering with automatic knee-point epsilon, core points, border points, and noise identification.</td>
+          <td><a href="/dbscan-clustering" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-cyan" style="background:#e0f2fe; color:#0369a1;">Stage 10</span></td>
+          <td><strong>Principal Component Analysis</strong></td>
+          <td>Unsupervised dimensionality reduction, explained variance, loading analysis, and orthogonal 2D feature projection.</td>
+          <td><a href="/pca" class="btn-secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">Explore →</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="continue-nav">
+  <a href="/data-loading" class="continue-link">
+    Begin with Data Loading &amp; Ingestion →
+  </a>
+</div>
+{% endblock %}
+{% block learned %}
+<section class="card what-we-learned">
+  <div class="card-title">💡 What We Learned</div>
+  <p>We learned how to load and understand the data, clean and prepare it, explore different patterns, build different models, compare their results, and find useful groups and patterns in the data.</p>
+</section>
+{% endblock %}

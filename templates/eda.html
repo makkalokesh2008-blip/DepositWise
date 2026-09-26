@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% block title %}Exploratory Data Analysis (EDA){% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Exploratory Data Analysis</h1>
+  <p class="page-desc">Comprehensive univariate, bivariate, and correlation analysis of banking customer demographic, financial, and marketing campaign features.</p>
+</div>
+
+<!-- SECTION A: DESCRIPTIVE STATISTICS FOR NUMERICAL FEATURES -->
+<div class="card">
+  <div class="card-title">1. Numerical Feature Descriptive Statistics</div>
+  <div class="card-subtitle">Descriptive measures of central tendency, spread, and percentiles computed on numerical banking features.</div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Count</th>
+          <th>Mean</th>
+          <th>Median (50%)</th>
+          <th>Std Dev (σ)</th>
+          <th>Min</th>
+          <th>Q1 (25%)</th>
+          <th>Q3 (75%)</th>
+          <th>Max</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in eda_stats.numerical %}
+        <tr>
+          <td><strong>{{ row.feature }}</strong></td>
+          <td>{{ '{:,}'.format(row.count) }}</td>
+          <td>{{ row.mean }}</td>
+          <td><strong>{{ row.median }}</strong></td>
+          <td>{{ row.std }}</td>
+          <td>{{ row.min }}</td>
+          <td>{{ row.p25 }}</td>
+          <td>{{ row.p75 }}</td>
+          <td>{{ row.max }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SECTION B: CATEGORICAL ATTRIBUTES PROFILE -->
+<div class="card">
+  <div class="card-title">2. Categorical Attributes & Cardinality Summary</div>
+  <div class="card-subtitle">Nominal and ordinal feature distributions with dominant category and representation percentage.</div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Attribute</th>
+          <th>Distinct Categories</th>
+          <th>Dominant (Mode) Category</th>
+          <th>Mode Frequency</th>
+          <th>Mode Share (%)</th>
+          <th>Missing Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in eda_stats.categorical %}
+        <tr>
+          <td><strong>{{ row.feature }}</strong></td>
+          <td><span class="badge badge-info">{{ row.unique }} classes</span></td>
+          <td><code>{{ row.top }}</code></td>
+          <td>{{ '{:,}'.format(row.top_count) }}</td>
+          <td>{{ row.top_pct }}%</td>
+          <td><span class="badge badge-success">{{ row.missing }} (0%)</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SECTION C: OUTLIER ANALYSIS (IQR METHOD) -->
+<div class="card">
+  <div class="card-title">3. Statistical Outlier Detection (Interquartile Range Rule)</div>
+  <div class="card-subtitle">Identification of statistical anomalies using the standard Tukey fence criteria (Lower = Q1 - 1.5×IQR, Upper = Q3 + 1.5×IQR).</div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Q1</th>
+          <th>Q3</th>
+          <th>IQR</th>
+          <th>Lower Fence</th>
+          <th>Upper Fence</th>
+          <th>Outlier Flags</th>
+          <th>Share (%)</th>
+          <th>Banking Domain Treatment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in eda_stats.outliers %}
+        <tr>
+          <td><strong>{{ row.feature }}</strong></td>
+          <td>{{ row.q1 }}</td>
+          <td>{{ row.q3 }}</td>
+          <td>{{ row.iqr }}</td>
+          <td>{{ row.lower_bound }}</td>
+          <td>{{ row.upper_bound }}</td>
+          <td><strong>{{ '{:,}'.format(row.outlier_count) }}</strong></td>
+          <td><span class="badge {{ 'badge-warning' if row.outlier_pct > 5 else 'badge-neutral' }}">{{ row.outlier_pct }}%</span></td>
+          <td style="font-size:12px; color:#475569;">{{ row.rationale }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="info-callout blue">
+    <strong>Statistical Outliers vs. Invalid Data:</strong> 
+    In financial and banking data, extreme values (e.g. accounts with balance &gt; ₹50,000 or clients contacted multiple times) represent genuine, highly valuable customer market segments rather than measurement errors. Truncating or deleting these records would introduce severe selection bias. They are retained and managed via robust scaling in downstream models.
+  </div>
+</div>
+
+<!-- SECTION D & E: CORE BANKING VISUALIZATIONS -->
+<div class="card">
+  <div class="card-title">4. Target Distribution & Feature Correlation</div>
+  <div class="viz-grid">
+    <div class="viz-card">
+      <div class="viz-card-header">Target Distribution: Term Deposit Subscription (y)</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/target_distribution.png') }}" alt="Target Distribution">
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:8px;">
+        Strong class imbalance: 88.3% non-subscribers (<code>no</code>) vs. 11.7% subscribers (<code>yes</code>). Requires stratified splits and threshold-independent metrics (ROC-AUC / PR-AUC).
+      </p>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-header">Numerical Correlation Heatmap</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/correlation_matrix.png') }}" alt="Correlation Matrix">
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:8px;">
+        Strong positive correlation observed between <code>pdays</code> and <code>previous</code> contacts. Low collinearity across demographic features (<code>age</code>, <code>balance</code>, <code>day</code>).
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- NUMERICAL DISTRIBUTIONS VS TARGET -->
+<div class="card">
+  <div class="card-title">5. Numerical Feature Behavior by Subscription Outcome</div>
+  <div class="viz-grid">
+    <div class="viz-card">
+      <div class="viz-card-header">Customer Age Distribution vs. Subscription</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/age_vs_target.png') }}" alt="Age vs Target">
+      </div>
+    </div>
+    <div class="viz-card">
+      <div class="viz-card-header">Yearly Balance Distribution vs. Subscription</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/balance_vs_target.png') }}" alt="Balance vs Target">
+      </div>
+    </div>
+    <div class="viz-card">
+      <div class="viz-card-header">Current Campaign Contacts vs. Subscription</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/campaign_vs_target.png') }}" alt="Campaign vs Target">
+      </div>
+    </div>
+    <div class="viz-card">
+      <div class="viz-card-header">Days Elapsed Since Prior Contact (Pdays) vs. Target</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/pdays_vs_target.png') }}" alt="Pdays vs Target">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORICAL CONVERSION RATES -->
+<div class="card">
+  <div class="card-title">6. Categorical Conversion Rate Analysis (% Subscribed)</div>
+  <div class="viz-grid">
+    <div class="viz-card">
+      <div class="viz-card-header">Subscription Rate by Job Category</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/job_vs_subscription.png') }}" alt="Job vs Subscription">
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:8px;">Students (~28%) and retirees (~22%) demonstrate significantly higher conversion rates compared to blue-collar workers (~7%).</p>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-header">Subscription Rate by Education Level</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/education_vs_subscription.png') }}" alt="Education vs Subscription">
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:8px;">Higher education correlates with increased deposit propensity (Tertiary: ~15% vs Primary: ~8.6%).</p>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-header">Housing Loan Status vs. Subscription</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/housing_vs_subscription.png') }}" alt="Housing vs Subscription">
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:8px;">Clients without housing debt subscribe at more than double the rate of clients with active mortgages.</p>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-header">Previous Campaign Outcome (Poutcome) vs. Subscription</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/poutcome_vs_subscription.png') }}" alt="Poutcome vs Subscription">
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:8px;">Previous campaign success is the strongest historical predictor, achieving over 64% repeat subscription rate.</p>
+    </div>
+  </div>
+</div>
+
+<div class="continue-nav">
+  <a href="/preprocessing" class="continue-link">
+    Continue to Data Preprocessing Pipeline →
+  </a>
+</div>
+{% endblock %}
+{% block learned %}
+<section class="card what-we-learned">
+  <div class="card-title">💡 What We Learned</div>
+  <p><strong>Patterns, Distributions, Correlations &amp; Outliers:</strong> The target distribution reveals significant class imbalance (88.3% non-subscribers vs. 11.7% subscribers). Bivariate analysis identifies customer job categories (students and retirees) and previous campaign success (<code>poutcome</code>) as strong conversion indicators. Tukey IQR analysis detects extreme balances and ages as legitimate high-value banking segments that must be preserved rather than naively deleted.</p>
+</section>
+{% endblock %}

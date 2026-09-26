@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% block title %}Dataset Loading & Profiling{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Dataset Loading</h1>
+  <p class="page-desc">Ingestion, validation, and schema profiling of bank marketing term-deposit records across multi-channel retail campaign contacts.</p>
+</div>
+
+<!-- DATASET OVERVIEW CARD -->
+<div class="card">
+  <div class="card-title">Dataset Overview</div>
+  <table class="overview-table">
+    <tbody>
+      <tr>
+        <td>Total Usable Records</td>
+        <td><strong>{{ '{:,}'.format(summary.train_shape[0]) }} records</strong> (training data used by this dashboard)</td>
+      </tr>
+      <tr>
+        <td>Total Columns (Attributes)</td>
+        <td><strong>{{ summary.total_columns }} columns</strong> (16 predictive features + 1 target variable)</td>
+      </tr>
+      <tr>
+        <td>Total Data Points (Cells)</td>
+        <td><strong>{{ '{:,}'.format(summary.total_cells) }} cells</strong></td>
+      </tr>
+      <tr>
+        <td>Duplicate Records Removed</td>
+        <td><strong>{{ summary.train_duplicates }} exact duplicates detected</strong></td>
+      </tr>
+      <tr>
+        <td>Missing Values</td>
+        <td><strong>{{ summary.train_missing }} missing values (0.00%)</strong> — completely intact structured dataset</td>
+      </tr>
+      <tr>
+        <td>In-Memory Footprint</td>
+        <td><strong>{{ summary.memory_mb }} MB</strong></td>
+      </tr>
+      <tr>
+        <td>Target Column</td>
+        <td><strong>y</strong> — Term deposit subscription (<code>yes</code> / <code>no</code>)</td>
+      </tr>
+      <tr>
+        <td>Target Distribution</td>
+        <td>
+          <span class="badge badge-neutral">no: {{ '{:,}'.format(summary.target_dist.no) }} ({{ summary.target_dist.no_pct }}%)</span>
+          <span class="badge badge-success" style="margin-left:6px;">yes: {{ '{:,}'.format(summary.target_dist.yes) }} ({{ summary.target_dist.yes_pct }}%)</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Dataset Source Ingestion</td>
+        <td>
+          {% for src in summary.sources %}
+            <span class="badge badge-info" style="margin-right:8px; padding:4px 10px;">
+              📁 <strong>{{ src.filename }}</strong>: {{ '{:,}'.format(src.rows) }} records ({{ src.purpose }})
+            </span>
+          {% endfor %}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ATTRIBUTE & SCHEMA PROFILING TABLE -->
+<div class="card">
+  <div class="card-title">Attribute & Schema Profiling</div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Attribute</th>
+          <th>Data Type</th>
+          <th>Role</th>
+          <th>Non-Null</th>
+          <th>Unique</th>
+          <th>Sample Value</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for col in summary.schema %}
+        <tr>
+          <td><strong>{{ col.column }}</strong></td>
+          <td><code>{{ col.dtype }}</code></td>
+          <td>
+            {% if col.column == 'y' %}
+              <span class="badge badge-success">Target</span>
+            {% elif col.column == 'duration' %}
+              <span class="badge badge-danger">Leakage (Drop)</span>
+            {% elif 'Numerical' in col.role %}
+              <span class="badge badge-info">Numerical</span>
+            {% else %}
+              <span class="badge badge-neutral">Categorical</span>
+            {% endif %}
+          </td>
+          <td>{{ '{:,}'.format(col.non_null) }}</td>
+          <td>{{ col.unique }}</td>
+          <td><code>{{ col.sample }}</code></td>
+          <td>{{ col.description }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- DATASET RECORDS PREVIEW (WITH PAGINATION) -->
+<div class="card">
+  <div class="card-title" style="margin-bottom:8px;">
+    <span>Dataset Records Preview</span>
+    <span style="font-size:12px; font-weight:500; color:#64748b; text-transform:none;">
+      Showing page {{ preview.page }} of {{ preview.total_pages }} ({{ '{:,}'.format(preview.total_records) }} total records)
+    </span>
+  </div>
+  
+  <div class="table-container" style="max-height: 480px; overflow-y:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          {% for col in preview.columns %}
+            <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in preview.rows %}
+        <tr>
+          <td style="color:#94a3b8; font-size:11px;">{{ preview.start_idx + loop.index0 }}</td>
+          {% for col in preview.columns %}
+            <td>
+              {% if col == 'y' %}
+                {% if row[col] == 'yes' %}
+                  <span class="badge badge-success">yes</span>
+                {% else %}
+                  <span class="badge badge-neutral">no</span>
+                {% endif %}
+              {% elif col == 'duration' %}
+                <span style="color:#94a3b8;">{{ row[col] }}s</span>
+              {% else %}
+                {{ row[col] }}
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINATION CONTROLS -->
+  <div class="pagination-bar">
+    <div class="pagination-links">
+      <a href="/data-loading?page=1&per_page={{ preview.per_page }}" class="pagination-btn {{ 'disabled' if preview.page == 1 }}">First</a>
+      <a href="/data-loading?page={{ preview.page - 1 }}&per_page={{ preview.per_page }}" class="pagination-btn {{ 'disabled' if preview.page == 1 }}">Previous</a>
+      <span class="pagination-current">Page {{ preview.page }} / {{ preview.total_pages }}</span>
+      <a href="/data-loading?page={{ preview.page + 1 }}&per_page={{ preview.per_page }}" class="pagination-btn {{ 'disabled' if preview.page == preview.total_pages }}">Next</a>
+      <a href="/data-loading?page={{ preview.total_pages }}&per_page={{ preview.per_page }}" class="pagination-btn {{ 'disabled' if preview.page == preview.total_pages }}">Last</a>
+    </div>
+
+    <form method="GET" action="/data-loading" class="rows-per-page">
+      <input type="hidden" name="page" value="1">
+      <label for="per_page_select" style="font-size:12px; font-weight:600; color:#475569;">Rows per page:</label>
+      <select id="per_page_select" name="per_page" class="form-select" style="height:30px; padding:2px 8px; font-size:12px;" onchange="this.form.submit()">
+        <option value="10" {{ 'selected' if preview.per_page == 10 }}>10</option>
+        <option value="20" {{ 'selected' if preview.per_page == 20 }}>20</option>
+        <option value="50" {{ 'selected' if preview.per_page == 50 }}>50</option>
+        <option value="100" {{ 'selected' if preview.per_page == 100 }}>100</option>
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="continue-nav">
+  <a href="/eda" class="continue-link">
+    Continue to Exploratory Data Analysis (EDA) →
+  </a>
+</div>
+{% endblock %}
+{% block learned %}
+<section class="card what-we-learned">
+  <div class="card-title">💡 What We Learned</div>
+  <p><strong>Dataset Structure, Schema &amp; Validation:</strong> The Bank Marketing dataset contains 16 pre-call attributes and one binary target (<code>y</code>). Ingestion validation confirms 0 missing values and 0 duplicate rows across 45,211 training records. Establishing schema definitions, attribute roles, data types, and memory footprints upfront guarantees data integrity prior to downstream transformations.</p>
+</section>
+{% endblock %}
