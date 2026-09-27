@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}Data Preprocessing Pipeline{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Data Preprocessing & Feature Engineering</h1>
+  <p class="page-desc">Leakage-safe transformation pipeline: feature selection, nominal encoding, robust scaling, and stratified training-validation partitioning.</p>
+</div>
+
+<!-- TOP METRIC OVERVIEW CARDS -->
+<div class="metric-row">
+  <div class="metric-card accent-blue">
+    <div class="metric-label">Raw Corpus Shape</div>
+    <div class="metric-value">{{ '{:,}'.format(report.shape[0]) }} × {{ report.shape[1] }}</div>
+    <div class="metric-sub">Original Ingested Dimensions</div>
+  </div>
+  <div class="metric-card accent-teal">
+    <div class="metric-label">Pre-Call Predictors</div>
+    <div class="metric-value">{{ report.categorical_columns|length + report.numerical_columns|length }} Features</div>
+    <div class="metric-sub">6 Numerical + 9 Categorical</div>
+  </div>
+  <div class="metric-card accent-rose">
+    <div class="metric-label">Leakage Filter</div>
+    <div class="metric-value" style="font-size:19px;">Duration Dropped</div>
+    <div class="metric-sub">Prevents Post-Outcome Leakage</div>
+  </div>
+  <div class="metric-card accent-purple">
+    <div class="metric-label">Transformed Columns</div>
+    <div class="metric-value">50 Features</div>
+    <div class="metric-sub">44 One-Hot Dummies + 6 Scaled Numerical</div>
+  </div>
+  <div class="metric-card accent-emerald">
+    <div class="metric-label">Training Partition</div>
+    <div class="metric-value">{{ '{:,}'.format(report.split.training_rows) }}</div>
+    <div class="metric-sub">80% Stratified (Seed: 42)</div>
+  </div>
+  <div class="metric-card accent-amber">
+    <div class="metric-label">Validation Partition</div>
+    <div class="metric-value">{{ '{:,}'.format(report.split.testing_rows) }}</div>
+    <div class="metric-sub">20% Stratified Holdout</div>
+  </div>
+</div>
+
+<!-- LEAKAGE PREVENTION HIGHLIGHT BOX -->
+<div class="card" style="border-left: 4px solid #ef4444;">
+  <div class="card-title" style="color:#b91c1c;">Crucial Leakage Prevention Rule: Duration Omission</div>
+  <p style="color:#334155; line-height:1.6; margin-bottom:10px;">
+    In bank marketing telemarketing campaigns, <strong><code>duration</code> (call length in seconds)</strong> is only known <em>during</em> or <em>after</em> a contact conversation takes place. Prior to placing the telephone call, call duration is inherently <code>0</code> or unknown.
+  </p>
+  <p style="color:#334155; line-height:1.6;">
+    If <code>duration</code> were included as a training feature, classifiers achieve an unrealistic ~90% accuracy purely by memorizing that conversations exceeding 5 minutes almost invariably result in subscription. Such a model is practically useless for prospecting. <strong>DepositWise strictly excludes <code>duration</code> from all pre-call classification pipelines</strong> to ensure true forward-looking operational validity.
+  </p>
+</div>
+
+<!-- STEP-BY-STEP PREPROCESSING PIPELINE -->
+<div class="card">
+  <div class="card-title">Preprocessing Pipeline Execution Stages</div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Process</th>
+          <th>Methodology Applied</th>
+          <th>Input Shape</th>
+          <th>Output Shape</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-info">1. Validation</span></td>
+          <td>Data Cleaning & Deduplication</td>
+          <td>Checked for missing nulls and duplicate rows.</td>
+          <td>45,211 × 17</td>
+          <td>45,211 × 17</td>
+          <td>0 missing values; 0 duplicates found. Intact dataset retained.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-danger">2. Feature Selection</span></td>
+          <td>Target Isolation & Leakage Guard</td>
+          <td>Drop <code>y</code> (target) and <code>duration</code> (leakage feature).</td>
+          <td>45,211 × 17</td>
+          <td>45,211 × 15</td>
+          <td>Prevents target leakage and aligns with real pre-call operational setting.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">3. Target Encoding</span></td>
+          <td>Binary Target Binarization</td>
+          <td>Mapped <code>no → 0</code> and <code>yes → 1</code>.</td>
+          <td>Series [y]</td>
+          <td>Vector [y ∈ {0, 1}]</td>
+          <td>Required standard binary format for classification estimators and loss functions.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-emerald">4. Partitioning</span></td>
+          <td>Stratified Train-Test Split</td>
+          <td>80/20 train-test split stratified on target distribution (random_state=42).</td>
+          <td>45,211 records</td>
+          <td>Train: 36,168<br>Test: 9,043</td>
+          <td>Guarantees training and evaluation sets reflect identical positive class prevalence (11.7%).</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-neutral">5. Categorical</span></td>
+          <td>One-Hot Nominal Encoding</td>
+          <td>OneHotEncoder(handle_unknown='ignore') applied to 9 categorical features.</td>
+          <td>9 nominal columns</td>
+          <td>44 binary dummies</td>
+          <td>Converts discrete categories into numeric indicator matrices without imposing artificial rank.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-info">6. Scaling</span></td>
+          <td>StandardScaler Normalization</td>
+          <td>StandardScaler() fitted exclusively on training set numerical features (μ=0, σ=1).</td>
+          <td>6 numerical columns</td>
+          <td>6 scaled columns</td>
+          <td>Prevents high-magnitude features (e.g. balance) from dominating distance and gradient calculations.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SCALING COMPARISON TABLE -->
+<div class="card">
+  <div class="card-title">Feature Scaling Parameters (Fitted on Training Split Exclusively)</div>
+  <div class="card-subtitle">Zero data leakage: All scaling parameters (mean, variance, minimum, maximum) are estimated strictly on training instances.</div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Raw Training Min</th>
+          <th>Raw Training Max</th>
+          <th>StandardScaler Mean (μ)</th>
+          <th>StandardScaler Scale (σ)</th>
+          <th>MinMaxScaler Interval</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in report.scaling_comparison %}
+        <tr>
+          <td><strong>{{ row.feature }}</strong></td>
+          <td>{{ '{:,}'.format(row.original_min) }}</td>
+          <td>{{ '{:,}'.format(row.original_max) }}</td>
+          <td>{{ row.standard_mean }}</td>
+          <td>{{ row.standard_scale }}</td>
+          <td><code>[{{ row.minmax_min }}, {{ row.minmax_max }}] → [0.0, 1.0]</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- IQR OUTLIER POLICY AND REVIEW -->
+<div class="card">
+  <div class="card-title">IQR Outlier Evaluation & Generalization Across Partitions</div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Q1</th>
+          <th>Q3</th>
+          <th>IQR</th>
+          <th>Fences [Lower, Upper]</th>
+          <th>Training Outliers</th>
+          <th>Validation Outliers</th>
+          <th>Outlier Handling Strategy</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in report.iqr_results %}
+        <tr>
+          <td><strong>{{ row.feature }}</strong></td>
+          <td>{{ row.q1 }}</td>
+          <td>{{ row.q3 }}</td>
+          <td>{{ row.iqr }}</td>
+          <td><code>[{{ row.lower_fence }}, {{ row.upper_fence }}]</code></td>
+          <td><strong>{{ '{:,}'.format(row.outlier_count) }}</strong></td>
+          <td>{{ '{:,}'.format(row.test_outside_fences) }}</td>
+          <td><span class="badge badge-success">{{ row.treatment }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="continue-nav">
+  <a href="/linear-regression" class="continue-link">
+    Continue to Linear Regression Experiment →
+  </a>
+</div>
+{% endblock %}
+{% block learned %}
+<section class="card what-we-learned">
+  <div class="card-title">💡 What We Learned</div>
+  <p><strong>Encoding, Scaling &amp; Leakage Prevention:</strong> Omission of the <code>duration</code> attribute is mandatory to prevent post-contact leakage in pre-call prospecting. Categorical features are converted via OneHotEncoder into 44 indicator columns without imposing arbitrary ordinality. Robust scaling parameters are fitted strictly on the 80% training partition, preventing data leakage into the 20% stratified validation set.</p>
+</section>
+{% endblock %}
