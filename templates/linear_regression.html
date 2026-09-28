@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% block title %}Linear Regression Experiment{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Linear Regression (Secondary Regression Experiment)</h1>
+  <p class="page-desc">
+    Continuous target modeling of customer yearly average <code>balance</code> (₹). 
+    Linear Regression models cannot be applied as the primary term-deposit classifier because <code>y</code> is binary.
+  </p>
+</div>
+
+<div class="info-callout blue" style="margin-bottom: 20px;">
+  <strong>Why this is a secondary experiment:</strong>
+  The primary target <code>y</code> is binary, so it belongs to the classification pages. This page instead predicts the continuous <strong><code>balance</code></strong> column with Ordinary Least Squares and Ridge Regression, excluding <code>balance</code>, <code>duration</code>, and <code>y</code> from the inputs.
+</div>
+
+<!-- CONTROLS: EXACTLY THREE BUTTONS -->
+<div class="tab-controls">
+  <a class="tab-btn {{ 'selected' if selected in ['without', 'linear'] }}" href="/linear-regression?view=without">Without Regularization</a>
+  <a class="tab-btn {{ 'selected' if selected == 'regularized' }}" href="/linear-regression?view=regularized">With Regularization</a>
+  <a class="tab-btn {{ 'selected' if selected == 'compare' }}" href="/linear-regression?view=compare">Compare All</a>
+</div>
+
+{% set active_key = 'linear' if selected in ['without', 'linear'] else ('ridge' if selected == 'regularized' else 'compare') %}
+
+{% if selected == 'compare' %}
+  <!-- METRIC CARDS ROW FOR COMPARISON -->
+  <div class="metric-row">
+    <div class="metric-card accent-blue">
+      <div class="metric-label">OLS Linear MAE</div>
+      <div class="metric-value">₹{{ '{:,.2f}'.format(report.models.linear.mae) }}</div>
+      <div class="metric-sub">Mean Absolute Error</div>
+    </div>
+    <div class="metric-card accent-teal">
+      <div class="metric-label">Ridge (L2) MAE</div>
+      <div class="metric-value">₹{{ '{:,.2f}'.format(report.models.ridge.mae) }}</div>
+      <div class="metric-sub">L2 Penalized MAE</div>
+    </div>
+    <div class="metric-card accent-purple">
+      <div class="metric-label">OLS Linear RMSE</div>
+      <div class="metric-value">₹{{ '{:,.2f}'.format(report.models.linear.rmse) }}</div>
+      <div class="metric-sub">Root Mean Squared Error</div>
+    </div>
+    <div class="metric-card accent-emerald">
+      <div class="metric-label">Ridge (L2) RMSE</div>
+      <div class="metric-value">₹{{ '{:,.2f}'.format(report.models.ridge.rmse) }}</div>
+      <div class="metric-sub">Root Mean Squared Error</div>
+    </div>
+    <div class="metric-card accent-amber">
+      <div class="metric-label">Linear R² Score</div>
+      <div class="metric-value">{{ '{:.4f}'.format(report.models.linear.r2) }}</div>
+      <div class="metric-sub">Variance Explained</div>
+    </div>
+    <div class="metric-card accent-cyan">
+      <div class="metric-label">Ridge R² Score</div>
+      <div class="metric-value">{{ '{:.4f}'.format(report.models.ridge.r2) }}</div>
+      <div class="metric-sub">L2 Regularized R²</div>
+    </div>
+  </div>
+
+  <!-- COMPARISON TABLE -->
+  <div class="card">
+    <div class="card-title">Regression Models Comparative Evaluation</div>
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Model Approach</th>
+            <th>Regularization Penalty</th>
+            <th>MAE (₹)</th>
+            <th>MSE (₹²)</th>
+            <th>RMSE (₹)</th>
+            <th>Coefficient of Determination (R²)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Without Regularization (OLS)</strong></td>
+            <td><span class="badge badge-neutral">None (Ordinary Least Squares)</span></td>
+            <td>₹{{ '{:,.2f}'.format(report.models.linear.mae) }}</td>
+            <td>{{ '{:,.1f}'.format(report.models.linear.mse) }}</td>
+            <td>₹{{ '{:,.2f}'.format(report.models.linear.rmse) }}</td>
+            <td><strong>{{ '{:.4f}'.format(report.models.linear.r2) }}</strong></td>
+          </tr>
+          <tr>
+            <td><strong>With Regularization (Ridge)</strong></td>
+            <td><span class="badge badge-info">L2 Penalty (α = 1.0)</span></td>
+            <td>₹{{ '{:,.2f}'.format(report.models.ridge.mae) }}</td>
+            <td>{{ '{:,.1f}'.format(report.models.ridge.mse) }}</td>
+            <td>₹{{ '{:,.2f}'.format(report.models.ridge.rmse) }}</td>
+            <td><strong>{{ '{:.4f}'.format(report.models.ridge.r2) }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CHARTS SIDE BY SIDE -->
+  <div class="viz-grid">
+    <div class="viz-card">
+      <div class="viz-card-header">Model Performance Comparison: Explained Variance (R²)</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/regression_comparison.png') }}" alt="Regression Comparison">
+      </div>
+    </div>
+    <div class="viz-card">
+      <div class="viz-card-header">Ridge Regularization: Actual vs. Predicted Balance</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/regression_ridge_actual_predicted.png') }}" alt="Ridge Actual vs Predicted">
+      </div>
+    </div>
+  </div>
+
+{% else %}
+  <!-- SINGLE MODEL VIEW (WITHOUT OR WITH REGULARIZATION) -->
+  {% set current_model = report.models[active_key] %}
+  <div class="metric-row">
+    <div class="metric-card accent-blue">
+      <div class="metric-label">Mean Absolute Error (MAE)</div>
+      <div class="metric-value">₹{{ '{:,.2f}'.format(current_model.mae) }}</div>
+      <div class="metric-sub">Average absolute prediction deviation</div>
+    </div>
+    <div class="metric-card accent-purple">
+      <div class="metric-label">Mean Squared Error (MSE)</div>
+      <div class="metric-value">{{ '{:,.0f}'.format(current_model.mse) }}</div>
+      <div class="metric-sub">Squared residual penalty metric</div>
+    </div>
+    <div class="metric-card accent-teal">
+      <div class="metric-label">Root Mean Squared Error</div>
+      <div class="metric-value">₹{{ '{:,.2f}'.format(current_model.rmse) }}</div>
+      <div class="metric-sub">Standard deviation of unexplained variance</div>
+    </div>
+    <div class="metric-card accent-emerald">
+      <div class="metric-label">R² Score (Goodness of Fit)</div>
+      <div class="metric-value">{{ '{:.4f}'.format(current_model.r2) }}</div>
+      <div class="metric-sub">Proportion of variance explained</div>
+    </div>
+  </div>
+
+  <!-- MODEL DETAILS & ACTUAL VS PREDICTED PLOT -->
+  <div class="viz-grid">
+    <div class="viz-card">
+      <div class="viz-card-header">Actual vs. Predicted Customer Balance (₹)</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/regression_' + active_key + '_actual_predicted.png') }}" alt="Actual vs Predicted">
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:8px;">
+        Points closer to the red diagonal (y = x) represent accurate balance estimates.
+      </p>
+    </div>
+
+    <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <div class="card-title">Algorithm Methodology & Mathematical Specification</div>
+        <p style="color:#334155; line-height:1.6; margin-bottom:12px;">
+          {% if active_key == 'linear' %}
+            <strong>Ordinary Least Squares (OLS) Linear Regression:</strong>
+            Minimizes the sum of squared differences between observed customer balances $y_i$ and linear predictions $\hat{y}_i = X_i\beta$:
+            <br>
+            $$\min_{\beta} \sum_{i=1}^n (y_i - X_i\beta)^2$$
+            Calculates unbiased estimates under Gauss-Markov assumptions without shrinkages.
+          {% else %}
+            <strong>Ridge Regression (Tikhonov L2 Regularization):</strong>
+            Augments the residual sum of squares loss with an L2 norm penalty on weight magnitudes ($\alpha = 1.0$):
+            <br>
+            $$\min_{\beta} \left( \sum_{i=1}^n (y_i - X_i\beta)^2 + \alpha \|\beta\|_2^2 \right)$$
+            Stabilizes coefficient estimations when banking predictors exhibit multi-collinearity.
+          {% endif %}
+        </p>
+        <div class="info-callout blue">
+          <strong>Interpretation:</strong> Balance has substantial variation beyond these input features. The reported R² should be read honestly as the fraction of balance variation explained by this simple linear experiment.
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="continue-nav">
+  <a href="/logistic-regression" class="continue-link">
+    Continue to Logistic Regression (Primary Classifier) →
+  </a>
+</div>
+{% endblock %}
+{% block learned %}
+<section class="card what-we-learned">
+  <div class="card-title">💡 What We Learned</div>
+  <p><strong>Continuous Prediction, OLS, Ridge &amp; Regression Metrics:</strong> Linear models are formulated for continuous targets (modeling customer yearly average balance in ₹) rather than binary classification. Evaluating Ordinary Least Squares alongside Ridge (L2 penalty α=1.0) via MAE, MSE, RMSE, and R² demonstrates how regularization shrinks coefficients to mitigate collinearity in correlated financial indicators.</p>
+</section>
+{% endblock %}
