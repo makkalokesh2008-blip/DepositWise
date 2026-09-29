@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% block title %}Logistic Regression Classifier{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Logistic Regression (Primary Binary Classifier)</h1>
+  <p class="page-desc">
+    Probabilistic modeling of term-deposit subscription propensity (<code>y ∈ {0, 1}</code>) using pre-call demographic, financial, and contact features.
+  </p>
+</div>
+
+<!-- CONTROLS: EXACTLY THREE BUTTONS -->
+<div class="tab-controls">
+  <a class="tab-btn {{ 'selected' if selected == 'without' }}" href="/logistic-regression?view=without">Without Regularization</a>
+  <a class="tab-btn {{ 'selected' if selected == 'regularized' }}" href="/logistic-regression?view=regularized">With Regularization</a>
+  <a class="tab-btn {{ 'selected' if selected == 'compare' }}" href="/logistic-regression?view=compare">Compare All</a>
+</div>
+
+{% if selected == 'compare' %}
+  <!-- COMPARISON VIEW -->
+  <div class="metric-row">
+    <div class="metric-card accent-blue">
+      <div class="metric-label">Unregularized Accuracy</div>
+      <div class="metric-value">{{ '{:.2f}%'.format(report.models.logistic_no_regularization.accuracy * 100) }}</div>
+      <div class="metric-sub">Without Penalty (C = ∞)</div>
+    </div>
+    <div class="metric-card accent-teal">
+      <div class="metric-label">Regularized Accuracy</div>
+      <div class="metric-value">{{ '{:.2f}%'.format(report.models.logistic_l2.accuracy * 100) }}</div>
+      <div class="metric-sub">L2 Penalized (C = 1.0)</div>
+    </div>
+    <div class="metric-card accent-purple">
+      <div class="metric-label">Unregularized ROC-AUC</div>
+      <div class="metric-value">{{ '{:.4f}'.format(report.models.logistic_no_regularization.roc_auc) }}</div>
+      <div class="metric-sub">Area Under ROC Curve</div>
+    </div>
+    <div class="metric-card accent-emerald">
+      <div class="metric-label">Regularized ROC-AUC</div>
+      <div class="metric-value">{{ '{:.4f}'.format(report.models.logistic_l2.roc_auc) }}</div>
+      <div class="metric-sub">Area Under ROC Curve</div>
+    </div>
+    <div class="metric-card accent-amber">
+      <div class="metric-label">Unregularized F1</div>
+      <div class="metric-value">{{ '{:.4f}'.format(report.models.logistic_no_regularization.f1_score) }}</div>
+      <div class="metric-sub">Harmonic Mean (P & R)</div>
+    </div>
+    <div class="metric-card accent-cyan">
+      <div class="metric-label">Regularized F1</div>
+      <div class="metric-value">{{ '{:.4f}'.format(report.models.logistic_l2.f1_score) }}</div>
+      <div class="metric-sub">Harmonic Mean (P & R)</div>
+    </div>
+  </div>
+
+  <!-- COMPARISON TABLE -->
+  <div class="card">
+    <div class="card-title">Logistic Regression Specifications Comparison</div>
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Model Specification</th>
+            <th>Penalty Type</th>
+            <th>Accuracy</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1-Score</th>
+            <th>ROC-AUC</th>
+            <th>PR-AUC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Without Regularization</strong></td>
+            <td><span class="badge badge-neutral">None (C = ∞)</span></td>
+            <td><strong>{{ '{:.4f}'.format(report.models.logistic_no_regularization.accuracy) }}</strong></td>
+            <td>{{ '{:.4f}'.format(report.models.logistic_no_regularization.precision) }}</td>
+            <td>{{ '{:.4f}'.format(report.models.logistic_no_regularization.recall) }}</td>
+            <td>{{ '{:.4f}'.format(report.models.logistic_no_regularization.f1_score) }}</td>
+            <td><strong>{{ '{:.4f}'.format(report.models.logistic_no_regularization.roc_auc) }}</strong></td>
+            <td>{{ '{:.4f}'.format(report.models.logistic_no_regularization.pr_auc) }}</td>
+          </tr>
+          <tr>
+            <td><strong>With Regularization (L2)</strong></td>
+            <td><span class="badge badge-info">Ridge / L2 (C = 1.0)</span></td>
+            <td><strong>{{ '{:.4f}'.format(report.models.logistic_l2.accuracy) }}</strong></td>
+            <td>{{ '{:.4f}'.format(report.models.logistic_l2.precision) }}</td>
+            <td>{{ '{:.4f}'.format(report.models.logistic_l2.recall) }}</td>
+            <td>{{ '{:.4f}'.format(report.models.logistic_l2.f1_score) }}</td>
+            <td><strong>{{ '{:.4f}'.format(report.models.logistic_l2.roc_auc) }}</strong></td>
+            <td>{{ '{:.4f}'.format(report.models.logistic_l2.pr_auc) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMPARISON CHARTS 2X2 -->
+  <div class="viz-grid">
+    <div class="viz-card">
+      <div class="viz-card-header">Model Performance Metrics Comparison</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/logistic_metric_comparison.png') }}" alt="Metric Comparison">
+      </div>
+    </div>
+    <div class="viz-card">
+      <div class="viz-card-header">Comparative ROC Curves</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/logistic_roc_comparison.png') }}" alt="ROC Comparison">
+      </div>
+    </div>
+    <div class="viz-card">
+      <div class="viz-card-header">Precision-Recall Curves Comparison</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/logistic_pr_comparison.png') }}" alt="PR Comparison">
+      </div>
+    </div>
+    <div class="viz-card">
+      <div class="viz-card-header">Side-by-Side Confusion Matrices</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/logistic_confusion_comparison.png') }}" alt="Confusion Comparison">
+      </div>
+    </div>
+  </div>
+
+{% else %}
+  <!-- SINGLE MODEL VIEW -->
+  {% set current = report.models[model_key] %}
+  <div class="metric-row">
+    <div class="metric-card accent-blue">
+      <div class="metric-label">Accuracy</div>
+      <div class="metric-value">{{ '{:.2f}%'.format(current.accuracy * 100) }}</div>
+      <div class="metric-sub">{{ '{:.4f}'.format(current.accuracy) }} overall correct</div>
+    </div>
+    <div class="metric-card accent-teal">
+      <div class="metric-label">Precision</div>
+      <div class="metric-value">{{ '{:.2f}%'.format(current.precision * 100) }}</div>
+      <div class="metric-sub">True Positive / Predicted Positive</div>
+    </div>
+    <div class="metric-card accent-amber">
+      <div class="metric-label">Recall (Sensitivity)</div>
+      <div class="metric-value">{{ '{:.2f}%'.format(current.recall * 100) }}</div>
+      <div class="metric-sub">True Positive / Actual Subscribers</div>
+    </div>
+    <div class="metric-card accent-purple">
+      <div class="metric-label">F1-Score</div>
+      <div class="metric-value">{{ '{:.4f}'.format(current.f1_score) }}</div>
+      <div class="metric-sub">Harmonic balance of P & R</div>
+    </div>
+    <div class="metric-card accent-emerald">
+      <div class="metric-label">ROC-AUC</div>
+      <div class="metric-value">{{ '{:.4f}'.format(current.roc_auc) }}</div>
+      <div class="metric-sub">Discrimination across all thresholds</div>
+    </div>
+    <div class="metric-card accent-cyan">
+      <div class="metric-label">PR-AUC</div>
+      <div class="metric-value">{{ '{:.4f}'.format(current.pr_auc) }}</div>
+      <div class="metric-sub">Precision-Recall trade-off</div>
+    </div>
+  </div>
+
+  <!-- VISUALIZATIONS -->
+  <div class="viz-grid">
+    <div class="viz-card">
+      <div class="viz-card-header">ROC Curve (Receiver Operating Characteristic)</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/' + model_key + '_roc_curve.png') }}" alt="ROC Curve">
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:8px;">
+        Area Under Curve (AUC = {{ '{:.4f}'.format(current.roc_auc) }}) proves strong ranking ability compared to random guess (0.50).
+      </p>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-header">Precision-Recall (PR) Curve</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/' + model_key + '_pr_curve.png') }}" alt="PR Curve">
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:8px;">
+        Evaluates performance specifically on the minority positive class without distortion from true negatives.
+      </p>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-header">Confusion Matrix (Threshold = 0.50)</div>
+      <div class="chart-wrapper">
+        <img class="chart-img" src="{{ url_for('static', filename='charts/' + model_key + '_confusion_matrix.png') }}" alt="Confusion Matrix">
+      </div>
+      <div style="font-size:12px; color:#475569; margin-top:8px;">
+        <strong>TN:</strong> {{ current.confusion_matrix[0][0] }} | 
+        <strong>FP:</strong> {{ current.confusion_matrix[0][1] }} | 
+        <strong>FN:</strong> {{ current.confusion_matrix[1][0] }} | 
+        <strong>TP:</strong> {{ current.confusion_matrix[1][1] }}
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <div class="card-title">Strongest Model Coefficients (Log-Odds Impact)</div>
+        <div class="table-container" style="max-height:300px; overflow-y:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Feature Indicator</th>
+                <th>Coefficient (β)</th>
+                <th>Direction</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if report.models.logistic_l2.strongest_positive %}
+                {% for coef in report.models.logistic_l2.strongest_positive[:5] %}
+                <tr>
+                  <td><strong>{{ coef.feature.replace('categorical__', '').replace('numerical__', '') }}</strong></td>
+                  <td>+{{ '{:.4f}'.format(coef.coefficient) }}</td>
+                  <td><span class="badge badge-success">Increases Subscription</span></td>
+                </tr>
+                {% endfor %}
+                {% for coef in report.models.logistic_l2.strongest_negative[:5] %}
+                <tr>
+                  <td><strong>{{ coef.feature.replace('categorical__', '').replace('numerical__', '') }}</strong></td>
+                  <td>{{ '{:.4f}'.format(coef.coefficient) }}</td>
+                  <td><span class="badge badge-danger">Decreases Subscription</span></td>
+                </tr>
+                {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="continue-nav">
+  <a href="/tree-based-algorithms" class="continue-link">
+    Continue to Decision Trees &amp; Ensembles →
+  </a>
+</div>
+{% endblock %}
+{% block learned %}
+<section class="card what-we-learned">
+  <div class="card-title">💡 What We Learned</div>
+  <p><strong>Binary Classification, Probabilities, Regularization &amp; Classification Metrics:</strong> Logistic Regression models the posterior log-odds of customer subscription (<code>y ∈ {0, 1}</code>). Evaluating unregularized and L2-regularized specifications across Accuracy, Precision, Recall, F1-Score, and ROC-AUC demonstrates threshold-independent performance while maintaining strict leakage isolation.</p>
+</section>
+{% endblock %}
