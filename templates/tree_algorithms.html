@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}Tree-Based & Ensemble Algorithms{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Decision Trees &amp; Ensemble Models</h1>
+  <p class="page-desc">
+    Comparative evaluation of decision trees, bagging, and boosting ensemble architectures trained on pre-call banking features with stratified 80/20 evaluation.
+  </p>
+</div>
+
+<!-- PARAMETER / MODEL SELECTOR CARD (DROPDOWN) -->
+<div class="param-card">
+  <div class="param-header">ALGORITHM SELECTOR & HYPERPARAMETER CONFIGURATION</div>
+  <form method="GET" action="/tree-based-algorithms" class="param-form">
+    <div class="param-group" style="min-width: 280px;">
+      <label class="param-label" for="model_select">Select Machine Learning Classifier:</label>
+      <select id="model_select" name="model" class="form-select" onchange="this.form.submit()">
+        <option value="decision_tree" {{ 'selected' if selected == 'decision_tree' }}>Decision Tree (CART Classifier)</option>
+        <option value="random_forest" {{ 'selected' if selected == 'random_forest' }}>Random Forest (Bagging Ensemble — 180 Estimators)</option>
+        <option value="extra_trees" {{ 'selected' if selected == 'extra_trees' }}>Extra Trees (Extremely Randomized Trees)</option>
+        <option value="gradient_boosting" {{ 'selected' if selected == 'gradient_boosting' }}>Gradient Boosting (Friedman Gradient Boosting)</option>
+        <option value="adaboost" {{ 'selected' if selected == 'adaboost' }}>AdaBoost (Adaptive Boosting)</option>
+        <option value="xgboost" {{ 'selected' if selected == 'xgboost' }}>XGBoost (Extreme Gradient Boosted Trees)</option>
+        <option value="lightgbm" {{ 'selected' if selected == 'lightgbm' }}>LightGBM (Leaf-Wise Light Gradient Boosting)</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-primary">View Model Performance</button>
+  </form>
+</div>
+
+{% set curr = report.models[selected] %}
+
+<!-- CHAMPION BADGE & METRIC CARDS -->
+<div class="card" style="padding:14px 20px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+  <div>
+    <span style="font-size:16px; font-weight:800; color:#0f172a;">{{ curr.name }}</span>
+    <span class="badge badge-info" style="margin-left:8px;">
+      {% if selected == 'decision_tree' %}Single Tree (CART)
+      {% elif selected in ['random_forest', 'extra_trees'] %}Bagging & Subspace Ensemble
+      {% else %}Sequential Gradient Boosting{% endif %}
+    </span>
+  </div>
+  {% if selected in ['lightgbm', 'random_forest', 'xgboost'] %}
+    <span class="badge badge-success" style="padding:5px 12px; font-size:12px;">
+      🏆 Top Benchmark Performer (ROC-AUC > 0.795)
+    </span>
+  {% endif %}
+</div>
+
+<div class="metric-row">
+  <div class="metric-card accent-blue">
+    <div class="metric-label">Accuracy</div>
+    <div class="metric-value">{{ '{:.2f}%'.format(curr.accuracy * 100) }}</div>
+    <div class="metric-sub">{{ '{:.4f}'.format(curr.accuracy) }} score</div>
+  </div>
+  <div class="metric-card accent-teal">
+    <div class="metric-label">Precision</div>
+    <div class="metric-value">{{ '{:.2f}%'.format(curr.precision * 100) }}</div>
+    <div class="metric-sub">True Positive Rate</div>
+  </div>
+  <div class="metric-card accent-amber">
+    <div class="metric-label">Recall (Sensitivity)</div>
+    <div class="metric-value">{{ '{:.2f}%'.format(curr.recall * 100) }}</div>
+    <div class="metric-sub">Captured Subscribers</div>
+  </div>
+  <div class="metric-card accent-purple">
+    <div class="metric-label">F1-Score</div>
+    <div class="metric-value">{{ '{:.4f}'.format(curr.f1_score) }}</div>
+    <div class="metric-sub">Harmonic Precision-Recall</div>
+  </div>
+  <div class="metric-card accent-emerald">
+    <div class="metric-label">ROC-AUC</div>
+    <div class="metric-value">{{ '{:.4f}'.format(curr.roc_auc) }}</div>
+    <div class="metric-sub">Threshold-independent score</div>
+  </div>
+  <div class="metric-card accent-cyan">
+    <div class="metric-label">PR-AUC</div>
+    <div class="metric-value">{{ '{:.4f}'.format(curr.pr_auc) }}</div>
+    <div class="metric-sub">Minority precision-recall</div>
+  </div>
+</div>
+
+<!-- TWO-COLUMN VISUALIZATIONS: CONFUSION MATRIX & FEATURE IMPORTANCE -->
+<div class="viz-grid">
+  <div class="viz-card">
+    <div class="viz-card-header">Confusion Matrix: {{ curr.name }}</div>
+    <div class="chart-wrapper">
+      <img class="chart-img" src="{{ url_for('static', filename='charts/' + selected + '_confusion_matrix.png') }}" alt="{{ curr.name }} Confusion Matrix">
+    </div>
+    <div style="font-size:12px; color:#475569; margin-top:8px;">
+      <strong>TN:</strong> {{ curr.confusion_matrix[0][0] }} | 
+      <strong>FP:</strong> {{ curr.confusion_matrix[0][1] }} | 
+      <strong>FN:</strong> {{ curr.confusion_matrix[1][0] }} | 
+      <strong>TP:</strong> {{ curr.confusion_matrix[1][1] }}
+    </div>
+  </div>
+
+  <div class="viz-card">
+    <div class="viz-card-header">Model-Derived Feature Importance: {{ curr.name }}</div>
+    <div class="chart-wrapper">
+      <img class="chart-img" src="{{ url_for('static', filename='charts/' + selected + '_importance.png') }}" alt="{{ curr.name }} Feature Importance">
+    </div>
+    <p style="font-size:12px; color:#64748b; margin-top:8px;">
+      Real Gini impurity / gain importance. Demonstrates strong dependency on customer age, balance, day of contact, and previous campaign success.
+    </p>
+  </div>
+</div>
+
+<!-- COMPLETE MODEL LEADERBOARD TABLE -->
+<div class="card">
+  <div class="card-title">All Models Leaderboard & Performance Comparison</div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Algorithm Name</th>
+          <th>Model Family</th>
+          <th>Accuracy</th>
+          <th>Precision</th>
+          <th>Recall</th>
+          <th>F1-Score</th>
+          <th>ROC-AUC</th>
+          <th>PR-AUC</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for key, x in report.models.items() %}
+          {% if key not in ['logistic_no_regularization', 'logistic_l2'] %}
+          <tr style="{{ 'background-color:#f0f9ff; font-weight:600;' if key == selected else '' }}">
+            <td>
+              <strong>{{ x.name }}</strong>
+              {% if key == 'lightgbm' %}<span class="badge badge-success" style="margin-left:4px;">Champion</span>{% endif %}
+            </td>
+            <td>
+              {% if key == 'decision_tree' %}Single Tree
+              {% elif key in ['random_forest', 'extra_trees'] %}Bagging / Random Forest
+              {% else %}Boosting / Gradient Boosting{% endif %}
+            </td>
+            <td>{{ '{:.4f}'.format(x.accuracy) }}</td>
+            <td>{{ '{:.4f}'.format(x.precision) }}</td>
+            <td>{{ '{:.4f}'.format(x.recall) }}</td>
+            <td>{{ '{:.4f}'.format(x.f1_score) }}</td>
+            <td><strong>{{ '{:.4f}'.format(x.roc_auc) }}</strong></td>
+            <td>{{ '{:.4f}'.format(x.pr_auc) }}</td>
+            <td>
+              <a href="/tree-based-algorithms?model={{ key }}" class="btn-secondary" style="padding:3px 8px; font-size:11px; text-decoration:none;">
+                {{ 'Selected' if key == selected else 'Inspect' }}
+              </a>
+            </td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="continue-nav">
+  <a href="/k-means" class="continue-link">
+    Continue to K-Means Clustering →
+  </a>
+</div>
+{% endblock %}
+{% block learned %}
+<section class="card what-we-learned">
+  <div class="card-title">💡 What We Learned</div>
+  <p><strong>Decision Rules, Tree Splitting, Bagging, Boosting &amp; Feature Importance:</strong> Single CART decision trees offer interpretable orthogonal decision boundaries but can overfit without pruning. Bagging ensembles (Random Forest, Extra Trees) reduce variance through bootstrap aggregation and random feature subsets. Sequential boosting algorithms (AdaBoost, Gradient Boosting, XGBoost, LightGBM) systematically minimize residual pseudo-errors, achieving superior discrimination (ROC-AUC &gt; 0.795) driven primarily by customer age, balance, day of contact, and previous campaign success.</p>
+</section>
+{% endblock %}
