@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}K-Means Customer Segmentation{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">K-Means Customer Segmentation</h1>
+  <p class="page-desc">K-Means partitions standardized numerical customer records into groups with similar age, balance, contact-day, campaign, pdays, and previous-contact patterns. It does not use <code>y</code> or <code>duration</code>.</p>
+</div>
+<div class="param-card">
+  <div class="param-header">K-MEANS SETTINGS</div>
+  <form method="GET" action="/k-means" class="param-form">
+    <div class="param-group"><label class="param-label" for="method">Select K using:</label><select id="method" name="method" class="form-select"><option value="manual" {{ 'selected' if result.method == 'manual' }}>Manual K</option><option value="elbow" {{ 'selected' if result.method == 'elbow' }}>Elbow Method</option><option value="silhouette" {{ 'selected' if result.method == 'silhouette' }}>Silhouette Score</option></select></div>
+    <div class="param-group"><label class="param-label" for="k">Number of clusters:</label><select id="k" name="k" class="form-select">{% for value in range(2, 9) %}<option value="{{ value }}" {{ 'selected' if result.k == value }}>{{ value }}</option>{% endfor %}</select></div>
+    <button type="submit" class="btn-primary">Run K-Means</button>
+  </form>
+</div>
+<div class="metric-row">
+  <div class="metric-card accent-blue"><div class="metric-label">Selected K</div><div class="metric-value">{{ result.k }}</div><div class="metric-sub">{{ result.method.title() }} selection</div></div>
+  <div class="metric-card accent-teal"><div class="metric-label">Inertia (WCSS)</div><div class="metric-value">{{ '{:,.0f}'.format(result.inertia) }}</div><div class="metric-sub">Within-cluster spread</div></div>
+  <div class="metric-card accent-emerald"><div class="metric-label">Silhouette Score</div><div class="metric-value">{{ '{:.4f}'.format(result.silhouette) }}</div><div class="metric-sub">Cluster separation</div></div>
+  <div class="metric-card accent-purple"><div class="metric-label">Sampled Records</div><div class="metric-value">{{ '{:,}'.format(result.samples) }}</div><div class="metric-sub">Numerical customer sample</div></div>
+</div>
+<div class="viz-grid">
+  <div class="viz-card"><div class="viz-card-header">K Selection Analysis</div><div class="chart-wrapper"><img class="chart-img" src="{{ url_for('static', filename='charts/' + result.analysis_chart) }}" alt="K-Means selection analysis"></div><p class="chart-note">The selected vertical marker shows the chosen number of clusters.</p></div>
+  <div class="viz-card"><div class="viz-card-header">Customer Segments in PCA Space</div><div class="chart-wrapper"><img class="chart-img" src="{{ url_for('static', filename='charts/' + result.scatter_chart) }}" alt="K-Means clusters"></div><p class="chart-note">PCA is used only to display the six-feature clustering result in two dimensions.</p></div>
+</div>
+<section class="card"><div class="card-title">Cluster Profile Summary</div><div class="table-container"><table class="data-table"><thead><tr><th>Cluster</th><th>Records</th><th>Share</th><th>Avg Age</th><th>Avg Balance (₹)</th><th>Avg Day</th><th>Avg Campaign</th><th>Avg Pdays</th><th>Avg Previous</th></tr></thead><tbody>{% for profile in result.profiles %}<tr><td><span class="badge badge-info">Cluster {{ profile.cluster_id }}</span></td><td>{{ '{:,}'.format(profile.count) }}</td><td>{{ profile.percentage }}%</td><td>{{ profile.avg_age }}</td><td>₹{{ '{:,.2f}'.format(profile.avg_balance) }}</td><td>{{ profile.avg_day }}</td><td>{{ profile.avg_campaign }}</td><td>{{ profile.avg_pdays }}</td><td>{{ profile.avg_previous }}</td></tr>{% endfor %}</tbody></table></div></section>
+<div class="continue-nav"><a href="/hierarchical" class="continue-link">Continue to Hierarchical Clustering →</a></div>
+{% endblock %}
+{% block learned %}<section class="card what-we-learned"><div class="card-title">💡 What We Learned</div><p><strong>Centroids, Similarity, Inertia &amp; Silhouette:</strong> K-Means partitions standardized customer vectors by iteratively assigning points to nearest centroids and minimizing within-cluster sum of squares (WCSS / Inertia). Evaluating candidate K values via the Elbow Method (inflection point) and Silhouette Analysis balances compactness with cluster separation using exclusively the six numerical banking attributes without target supervision.</p></section>{% endblock %}
